@@ -1,0 +1,120 @@
+Queries
+
+1. Basic Queries
+-- Movies after 2000
+SELECT * FROM Movie WHERE year > 2000;
+
+-- Genres of Inception
+SELECT g.name
+FROM Genre g
+JOIN MovieGenre mg ON g.genre_id = mg.genre_id
+JOIN Movie m ON m.movie_id = mg.movie_id
+WHERE m.title = 'Inception';
+
+-- Movies per company
+SELECT pc.name, COUNT(*) 
+FROM Movie m
+JOIN ProductionCompany pc ON m.company_id = pc.company_id
+GROUP BY pc.name;
+
+-- Actors born after 1980
+SELECT * FROM Actor WHERE dob > '1980-01-01';
+
+2. Aggregate
+SELECT g.name, AVG(m.length)
+FROM Movie m
+JOIN MovieGenre mg ON m.movie_id = mg.movie_id
+JOIN Genre g ON g.genre_id = mg.genre_id
+GROUP BY g.name;
+
+SELECT g.name, COUNT(*) as total
+FROM MovieGenre mg
+JOIN Genre g ON g.genre_id = mg.genre_id
+GROUP BY g.name
+ORDER BY total DESC
+LIMIT 1;
+
+SELECT a.name, COUNT(*) as total
+FROM MovieActor ma
+JOIN Actor a ON ma.actor_id = a.actor_id
+GROUP BY a.name
+ORDER BY total DESC
+LIMIT 5;
+
+3. Joins
+SELECT m.title, d.name
+FROM Movie m
+JOIN MovieDirector md ON m.movie_id = md.movie_id
+JOIN Director d ON d.director_id = md.director_id;
+
+SELECT q.quote, a.name
+FROM Quote q
+JOIN Actor a ON q.actor_id = a.actor_id
+JOIN Movie m ON m.movie_id = q.movie_id
+WHERE m.title = 'The Dark Knight';
+
+SELECT pc.name, pc.address
+FROM Movie m
+JOIN ProductionCompany pc ON m.company_id = pc.company_id
+JOIN MovieDirector md ON md.movie_id = m.movie_id
+JOIN Director d ON d.director_id = md.director_id
+WHERE d.name = 'Christopher Nolan';
+
+
+4. Nested
+SELECT DISTINCT m.title
+FROM Movie m
+WHERE m.movie_id IN (
+    SELECT ma.movie_id
+    FROM MovieActor ma
+    WHERE ma.actor_id IN (
+        SELECT director_id FROM Director
+    )
+);
+
+SELECT a.name
+FROM Actor a
+WHERE NOT EXISTS (
+    SELECT m.movie_id
+    FROM Movie m
+    JOIN MovieDirector md ON m.movie_id = md.movie_id
+    JOIN Director d ON d.director_id = md.director_id
+    WHERE d.name = 'Quentin Tarantino'
+    AND NOT EXISTS (
+        SELECT * FROM MovieActor ma
+        WHERE ma.movie_id = m.movie_id AND ma.actor_id = a.actor_id
+    )
+);
+
+
+5. Advanced
+-- Movies with ≥2 directors
+SELECT movie_id
+FROM MovieDirector
+GROUP BY movie_id
+HAVING COUNT(*) >= 2;
+
+-- Actors with multiple roles same movie
+SELECT actor_id, movie_id
+FROM MovieActor
+GROUP BY actor_id, movie_id
+HAVING COUNT(role) > 1;
+
+-- Actor spoke >3 quotes
+SELECT movie_id, actor_id
+FROM Quote
+GROUP BY movie_id, actor_id
+HAVING COUNT(*) > 3;
+
+
+6. Data Modification
+INSERT INTO Genre (name) VALUES ('Sci-Fi');
+
+UPDATE ProductionCompany
+SET address = 'New York, USA'
+WHERE name = 'Warner Bros.';
+
+DELETE FROM Quote
+WHERE movie_id IN (
+    SELECT movie_id FROM Movie WHERE year < 1990
+);
